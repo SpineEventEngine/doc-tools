@@ -37,9 +37,9 @@ buildscript {
         maven { url = uri(io.spine.internal.gradle.Repos.artifactRegistrySnapshots) }
     }
 
-    val mcJavaVersion: String by extra
+    val versionToPublish: String by extra
     dependencies {
-        classpath("io.spine.tools:spine-javadoc-style:$mcJavaVersion")
+        classpath("io.spine.tools:spine-javadoc-style:$versionToPublish")
         classpath(io.spine.internal.dependency.Protobuf.GradlePlugin.lib)
     }
 }
