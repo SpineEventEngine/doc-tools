@@ -1,5 +1,5 @@
 /*
- * Copyright 2020, TeamDev. All rights reserved.
+ * Copyright 2021, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,9 +24,6 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-project.extra.apply {
-    this["versionToPublish"] = "0.0.1"
-    this["spineCoreVersion"] = "1.7.0"
-    this["spineBaseVersion"] = "1.7.0"
-    this["spineTimeVersion"] = "1.7.0"
-}
+val mcVersion by extra("0.1.1")
+val spineBaseVersion by extra("2.0.0-SNAPSHOT.70")
+val versionToPublish by extra("2.0.0-SNAPSHOT.71")

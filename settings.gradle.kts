@@ -1,5 +1,5 @@
 /*
- * Copyright 2020, TeamDev. All rights reserved.
+ * Copyright 2021, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,9 +24,9 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-rootProject.name = "spine-template"
+rootProject.name = "javadoc-tools"
 
 include(
-        "template-client",
-        "template-server"
+    "javadoc-filter",
+    "javadoc-style"
 )

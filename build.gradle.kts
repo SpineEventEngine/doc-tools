@@ -1,5 +1,5 @@
 /*
- * Copyright 2020, TeamDev. All rights reserved.
+ * Copyright 2021, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,50 +26,56 @@
 
 @file:Suppress("RemoveRedundantQualifierName") // To prevent IDEA replacing FQN imports.
 
-import io.spine.gradle.internal.DependencyResolution
-import io.spine.gradle.internal.Deps
-import io.spine.gradle.internal.PublishingRepos
-
-buildscript {
-    apply(from = "version.gradle.kts")
-    apply(from = "$rootDir/config/gradle/dependencies.gradle")
-
-    val dependencyResolution = io.spine.gradle.internal.DependencyResolution
-
-    val spineBaseVersion: String by extra
-    val spineTimeVersion: String by extra
-
-    dependencyResolution.defaultRepositories(repositories)
-    dependencyResolution.forceConfiguration(configurations)
-
-    configurations.all {
-        resolutionStrategy {
-            force(
-                    "io.spine:spine-base:$spineBaseVersion",
-                    "io.spine:spine-time:$spineTimeVersion"
-            )
-        }
-    }
-}
+import com.google.common.io.Files.createParentDirs
+import com.google.protobuf.gradle.protobuf
+import com.google.protobuf.gradle.protoc
+import io.spine.internal.dependency.CheckerFramework
+import io.spine.internal.dependency.ErrorProne
+import io.spine.internal.dependency.FindBugs
+import io.spine.internal.dependency.Grpc
+import io.spine.internal.dependency.Guava
+import io.spine.internal.dependency.JUnit
+import io.spine.internal.dependency.Protobuf
+import io.spine.internal.dependency.Truth
+import io.spine.internal.gradle.IncrementGuard
+import io.spine.internal.gradle.Scripts
+import io.spine.internal.gradle.VersionWriter
+import io.spine.internal.gradle.applyStandard
+import io.spine.internal.gradle.checkstyle.CheckStyleConfig
+import io.spine.internal.gradle.excludeProtobufLite
+import io.spine.internal.gradle.forceVersions
+import io.spine.internal.gradle.javadoc.JavadocConfig
+import io.spine.internal.gradle.publish.Publish.Companion.publishProtoArtifact
+import io.spine.internal.gradle.publish.PublishingRepos
+import io.spine.internal.gradle.publish.PublishingRepos.gitHub
+import io.spine.internal.gradle.publish.spinePublishing
+import io.spine.internal.gradle.report.coverage.JacocoConfig
+import io.spine.internal.gradle.report.license.LicenseReporter
+import io.spine.internal.gradle.report.pom.PomGenerator
+import java.util.*
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     `java-library`
     idea
-    id("com.google.protobuf").version(io.spine.gradle.internal.Deps.versions.protobufPlugin)
-    id("net.ltgt.errorprone").version(io.spine.gradle.internal.Deps.versions.errorPronePlugin)
-    id("io.spine.tools.gradle.bootstrap") version "1.7.0" apply false
+    io.spine.internal.dependency.Protobuf.GradlePlugin.apply {
+        id(id).version(version)
+    }
+    io.spine.internal.dependency.ErrorProne.GradlePlugin.apply {
+        id(id).version(version)
+    }
+    kotlin("jvm") version io.spine.internal.dependency.Kotlin.version
 }
 
-apply(from = "version.gradle.kts")
-val spineCoreVersion: String by extra
-val spineBaseVersion: String by extra
-val spineTimeVersion: String by extra
-
-extra["projectsToPublish"] = listOf(
-        "template-client",
-        "template-server"
-)
-extra["credentialsPropertyFile"] = PublishingRepos.cloudRepo.credentials
+spinePublishing {
+    projectsToPublish.addAll(subprojects.map { it.path })
+    targetRepositories.addAll(
+        PublishingRepos.cloudRepo,
+        PublishingRepos.cloudArtifactRegistry,
+        gitHub("javadoc-tools")
+    )
+    spinePrefix.set(true)
+}
 
 allprojects {
     apply {
@@ -79,74 +85,81 @@ allprojects {
         apply(from = "$rootDir/version.gradle.kts")
     }
 
-    group = "io.spine.template"
+    group = "io.spine.tools"
     version = extra["versionToPublish"]!!
+
+    repositories.applyStandard()
 }
 
 subprojects {
     apply {
         plugin("java-library")
+        plugin("kotlin")
         plugin("net.ltgt.errorprone")
-        plugin("pmd")
-        plugin("io.spine.tools.gradle.bootstrap")
+        plugin("pmd-settings")
+        plugin(Protobuf.GradlePlugin.id)
 
-        from(Deps.scripts.javacArgs(project))
-        from(Deps.scripts.pmd(project))
-        from(Deps.scripts.projectLicenseReport(project))
-        from(Deps.scripts.testOutput(project))
-        from(Deps.scripts.javadocOptions(project))
-
-        from(Deps.scripts.testArtifacts(project))
+        from(Scripts.javacArgs(project))
+        from(Scripts.testOutput(project))
+        from(Scripts.testArtifacts(project))
     }
 
-    val isTravis = System.getenv("TRAVIS") == "true"
-    if (isTravis) {
-        tasks.javadoc {
-            val opt = options
-            if (opt is CoreJavadocOptions) {
-                opt.addStringOption("Xmaxwarns", "1")
-            }
-        }
-    }
-
-    java {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
-    }
-
-    DependencyResolution.defaultRepositories(repositories)
 
     dependencies {
-        errorprone(Deps.build.errorProneCore)
-        errorproneJavac(Deps.build.errorProneJavac)
+        errorprone(ErrorProne.core)
+        errorproneJavac(ErrorProne.javacPlugin)
 
-        implementation(Deps.build.guava)
-        compileOnlyApi(Deps.build.jsr305Annotations)
-        compileOnlyApi(Deps.build.checkerAnnotations)
-        Deps.build.errorProneAnnotations.forEach { compileOnlyApi(it) }
+        compileOnlyApi(FindBugs.annotations)
+        compileOnlyApi(CheckerFramework.annotations)
+        ErrorProne.annotations.forEach { compileOnlyApi(it) }
 
-        testImplementation(Deps.test.guavaTestlib)
-        Deps.test.junit5Api.forEach { testImplementation(it) }
-        Deps.test.truth.forEach { testImplementation(it) }
-        testImplementation("io.spine.tools:spine-mute-logging:$spineBaseVersion")
+        implementation(Guava.lib)
 
-        testRuntimeOnly(Deps.test.junit5Runner)
+        testImplementation(Guava.testLib)
+        JUnit.api.forEach { testImplementation(it) }
+        Truth.libs.forEach { testImplementation(it) }
+        testRuntimeOnly(JUnit.runner)
     }
 
-    DependencyResolution.forceConfiguration(configurations)
-    configurations {
+    val spineBaseVersion: String by extra
+
+    with(configurations) {
+        forceVersions()
+        excludeProtobufLite()
         all {
             resolutionStrategy {
                 force(
-                        "io.spine:spine-base:$spineBaseVersion",
-                        "io.spine:spine-testlib:$spineBaseVersion",
-                        "io.spine:spine-base:$spineBaseVersion",
-                        "io.spine:spine-time:$spineTimeVersion"
+                    "io.spine:spine-base:$spineBaseVersion",
+                    "io.spine.tools:spine-testlib:$spineBaseVersion"
                 )
             }
         }
     }
-    DependencyResolution.excludeProtobufLite(configurations)
+
+    val javaVersion = JavaVersion.VERSION_1_8
+
+    java {
+        sourceCompatibility = javaVersion
+        targetCompatibility = javaVersion
+    }
+
+    JavadocConfig.applyTo(project)
+    CheckStyleConfig.applyTo(project)
+
+    kotlin {
+        explicitApi()
+    }
+
+    tasks.withType<KotlinCompile>().configureEach {
+        kotlinOptions {
+            jvmTarget = javaVersion.toString()
+            freeCompilerArgs = listOf(
+                "-Xskip-prerelease-check",
+                "-Xjvm-default=all",
+                "-Xopt-in=kotlin.contracts.ExperimentalContracts"
+            )
+        }
+    }
 
     tasks.test {
         useJUnitPlatform {
@@ -154,39 +167,58 @@ subprojects {
         }
     }
 
+    val generatedResources = "$projectDir/generated/main/resources"
+
+    tasks.create<DefaultTask>(name = "prepareProtocConfigVersions") {
+        description = "Prepares the versions.properties file."
+
+        val propertiesFile = file("$generatedResources/versions.properties")
+        outputs.file(propertiesFile)
+
+        val versions = Properties()
+        with(versions) {
+            setProperty("baseVersion", spineBaseVersion)
+            setProperty("protobufVersion", Protobuf.version)
+            setProperty("gRPCVersion", Grpc.version)
+        }
+
+        @Suppress("UNCHECKED_CAST")
+        inputs.properties(HashMap(versions) as MutableMap<String, *>)
+
+        doLast {
+            createParentDirs(propertiesFile)
+            propertiesFile.createNewFile()
+            propertiesFile.outputStream().use {
+                versions.store(it,
+                    "Versions of dependencies of the Spine Model Compiler for Java plugin and" +
+                            " the Spine Protoc plugin.")
+            }
+        }
+
+        tasks.processResources {
+            dependsOn(this@create)
+        }
+    }
+
+    sourceSets.main {
+        resources.srcDir(generatedResources)
+    }
+
+    apply<IncrementGuard>()
+    apply<VersionWriter>()
+    publishProtoArtifact(project)
+    LicenseReporter.generateReportIn(project)
+
     apply {
-        from(Deps.scripts.slowTests(project))
-        from(Deps.scripts.testOutput(project))
-        from(Deps.scripts.javadocOptions(project))
+        from(Scripts.slowTests(project))
+        from(Scripts.testOutput(project))
     }
 
-    tasks.register("sourceJar", Jar::class) {
-        from(sourceSets.main.get().allJava)
-        archiveClassifier.set("sources")
-    }
-
-    tasks.register("testOutputJar", Jar::class) {
-        from(sourceSets.test.get().output)
-        archiveClassifier.set("test")
-    }
-
-    tasks.register("javadocJar", Jar::class) {
-        from("$projectDir/build/docs/javadoc")
-        archiveClassifier.set("javadoc")
-
-        dependsOn(tasks.javadoc)
+    protobuf {
+        protoc { artifact = Protobuf.compiler }
     }
 }
 
-apply {
-    from(Deps.scripts.publish(project))
-
-    // Aggregated coverage report across all subprojects.
-    from(Deps.scripts.jacoco(project))
-
-    // Generate a repository-wide report of 3rd-party dependencies and their licenses.
-    from(Deps.scripts.repoLicenseReport(project))
-
-    // Generate a `pom.xml` file containing first-level dependency of all projects in the repository.
-    from(Deps.scripts.generatePom(project))
-}
+JacocoConfig.applyTo(project)
+PomGenerator.applyTo(project)
+LicenseReporter.mergeAllReports(project)
