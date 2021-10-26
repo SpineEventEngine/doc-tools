@@ -49,8 +49,6 @@ import static com.google.common.truth.Truth.assertThat;
 import static io.spine.tools.javadoc.filter.doclet.JavadocArgsBuilder.getJavadocDir;
 import static io.spine.tools.javadoc.filter.doclet.RootDocProxyReceiver.rootDocFor;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests {@link ExcludeInternal}.
@@ -100,19 +98,22 @@ class ExcludeInternalTest {
 
             RootDoc rootDoc = rootDocFor(args);
 
-            assertEquals(0, rootDoc.specifiedClasses().length);
+            assertThat(rootDoc.specifiedClasses())
+                    .isEmpty();
         }
 
         @Test
         @DisplayName("internal constructors")
         void ctors() {
-            String[] args = new JavadocArgsBuilder().addSource("InternalCtorClass.java")
-                                                    .build();
+            String[] args = new JavadocArgsBuilder()
+                    .addSource("InternalCtorClass.java")
+                    .build();
 
             RootDoc rootDoc = rootDocFor(args);
 
             ClassDoc classDoc = rootDoc.specifiedClasses()[0];
-            assertEquals(0, classDoc.constructors().length);
+            assertThat(classDoc.constructors())
+                    .isEmpty();
         }
 
         @Test
@@ -125,7 +126,8 @@ class ExcludeInternalTest {
             RootDoc rootDoc = rootDocFor(args);
 
             ClassDoc classDoc = rootDoc.specifiedClasses()[0];
-            assertEquals(0, classDoc.fields().length);
+            assertThat(classDoc.fields())
+                    .isEmpty();
         }
 
         @Test
@@ -138,7 +140,8 @@ class ExcludeInternalTest {
             RootDoc rootDoc = rootDocFor(args);
 
             ClassDoc classDoc = rootDoc.specifiedClasses()[0];
-            assertEquals(0, classDoc.methods().length);
+            assertThat(classDoc.methods())
+                    .isEmpty();
         }
 
         /**
@@ -154,7 +157,8 @@ class ExcludeInternalTest {
 
             RootDoc rootDoc = rootDocFor(args);
 
-            assertEquals(0, rootDoc.specifiedClasses().length);
+            assertThat(rootDoc.specifiedClasses())
+                    .isEmpty();
         }
 
         @Test
@@ -166,7 +170,8 @@ class ExcludeInternalTest {
 
             RootDoc rootDoc = rootDocFor(args);
 
-            assertEquals(0, rootDoc.specifiedClasses().length);
+            assertThat(rootDoc.specifiedClasses())
+                    .isEmpty();
         }
 
         @Test
@@ -178,7 +183,8 @@ class ExcludeInternalTest {
 
             RootDoc rootDoc = rootDocFor(args);
 
-            assertEquals(0, rootDoc.specifiedClasses().length);
+            assertThat(rootDoc.specifiedClasses())
+                    .isEmpty();
         }
 
         @Test
@@ -190,7 +196,8 @@ class ExcludeInternalTest {
 
             RootDoc rootDoc = rootDocFor(args);
 
-            assertEquals(0, rootDoc.specifiedClasses().length);
+            assertThat(rootDoc.specifiedClasses())
+                    .isEmpty();
         }
     }
 
@@ -206,7 +213,8 @@ class ExcludeInternalTest {
 
         RootDoc rootDoc = rootDocFor(args);
 
-        assertEquals(1, rootDoc.specifiedClasses().length);
+        assertThat(rootDoc.specifiedClasses())
+                .hasLength(1);
     }
 
     /**
@@ -222,7 +230,8 @@ class ExcludeInternalTest {
 
         RootDoc rootDoc = rootDocFor(args);
 
-        assertEquals(1, rootDoc.specifiedClasses().length);
+        assertThat(rootDoc.specifiedClasses())
+                .hasLength(1);
     }
 
     @Nested
@@ -245,12 +254,13 @@ class ExcludeInternalTest {
             ClassDoc anotherClassDoc = classDoc.superclass();
             classDoc.compareTo(anotherClassDoc);
 
-            assertEquals(1, rootDoc.specifiedClasses().length);
+            assertThat(rootDoc.specifiedClasses())
+                    .hasLength(1);
         }
 
         @Test
-        @DisplayName("overriden methods")
-        void handleOverridenMethod() {
+        @DisplayName("overridden methods")
+        void handleOverriddenMethod() {
             String[] args = new JavadocArgsBuilder()
                     .addSource(INTERNAL_METHOD_CLASS_FILENAME)
                     .addSource("OverridesInternalMethod.java")
@@ -266,8 +276,9 @@ class ExcludeInternalTest {
             MethodDoc overriddenMethod = methodDoc.overriddenMethod();
             methodDoc.overrides(overriddenMethod);
 
-            assertEquals(0, rootDoc.classNamed(TEST_SOURCES_PACKAGE + ".InternalMethodClass")
-                                   .methods().length);
+            ClassDoc classDoc = rootDoc.classNamed(TEST_SOURCES_PACKAGE + ".InternalMethodClass");
+            assertThat(classDoc.methods())
+                    .isEmpty();
         }
 
         @Test
@@ -286,7 +297,8 @@ class ExcludeInternalTest {
             ClassDoc superclass = classDoc.superclass();
             classDoc.subclassOf(superclass);
 
-            assertEquals(1, rootDoc.specifiedClasses().length);
+            assertThat(rootDoc.specifiedClasses())
+                    .hasLength(1);
         }
     }
 
