@@ -1,7 +1,7 @@
 ## General
 
 The module contains the custom Javadoc doclet, which excludes
-elements annotated with `io.spine.Internal`.
+elements annotated with `io.spine.annotation.Internal`.
 
 This module relies on JDK 8 API.
 
@@ -9,7 +9,9 @@ This module relies on JDK 8 API.
 
 To use the doclet, specify the Javadoc options:
 
-`javadoc -doclet ExcludeInternalDoclet -docletpath "classpathlist" ...`
+```
+javadoc -doclet ExcludeInternalDoclet -docletpath "classpathlist" ...
+```
 
 ## Tests
 

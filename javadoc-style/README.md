@@ -1,7 +1,7 @@
-# Spine Javadoc Prettifier
+# Javadoc style formatter
 
-The Gradle which re-formats Javadoc parts of the Java code generated from Proto types defined
-in a module.
+The Gradle plugin which re-formats Javadoc parts of the Java code generated from Protobuf types
+defined in a module.
 
 The plugin performs the following formatting:
 
