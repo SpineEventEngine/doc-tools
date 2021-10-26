@@ -24,14 +24,13 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package io.spine.tools.javadoc;
-
-import com.sun.javadoc.ProgramElementDoc;
-
-import java.util.function.Predicate;
-
 /**
- * Tells if a {@link ProgramElementDoc} matches a specified condition.
+ * This package provides custom doclets for Javadoc tool.
  */
-interface Filter extends Predicate<ProgramElementDoc> {
-}
+@CheckReturnValue
+@ParametersAreNonnullByDefault
+package io.spine.tools.javadoc.filter.doclet;
+
+import com.google.errorprone.annotations.CheckReturnValue;
+
+import javax.annotation.ParametersAreNonnullByDefault;

@@ -24,7 +24,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package io.spine.tools.javadoc;
+package io.spine.tools.javadoc.filter.doclet;
 
 import com.sun.javadoc.ClassDoc;
 import com.sun.javadoc.MethodDoc;
@@ -45,19 +45,21 @@ import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 
-import static io.spine.tools.javadoc.RootDocProxyReceiver.rootDocFor;
+import static com.google.common.truth.Truth.assertThat;
+import static io.spine.tools.javadoc.filter.doclet.JavadocArgsBuilder.getJavadocDir;
+import static io.spine.tools.javadoc.filter.doclet.RootDocProxyReceiver.rootDocFor;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Tests {@link io.spine.tools.javadoc.ExcludeInternalDoclet}.
+ * Tests {@link ExcludeInternal}.
  *
  * <p>The source code used by this test suite is located under {@code resources/testsources}.
  */
 @MuteLogging
-@DisplayName("ExcludeInternalDoclet should")
-class ExcludeInternalDocletTest {
+@DisplayName("`ExcludeInternal` should")
+class ExcludeInternalTest {
 
     private static final String TEST_SOURCES_PACKAGE = "testsources";
     private static final String INTERNAL_PACKAGE = TEST_SOURCES_PACKAGE + ".internal";
@@ -78,14 +80,16 @@ class ExcludeInternalDocletTest {
                 .addSource(NOT_INTERNAL_CLASS_FILENAME)
                 .build();
 
-        ExcludeInternalDoclet.main(args);
+        ExcludeInternal.main(args);
 
-        assertTrue(Files.exists(Paths.get(JavadocArgsBuilder.getJavadocDir())));
+        Path javadocs = Paths.get(getJavadocDir());
+        assertThat(Files.exists(javadocs))
+                .isTrue();
     }
 
     @Nested
     @DisplayName("exclude internal")
-    class ExcludeInternal {
+    class Excluding {
 
         @Test
         @DisplayName("annotated annotations")
@@ -210,7 +214,7 @@ class ExcludeInternalDocletTest {
      * annotation), is not excluded from our documentation.
      */
     @Test
-    @DisplayName("not use @Internal annotation from other libraries or frameworks")
+    @DisplayName("not use `@Internal` annotation from other libraries or frameworks")
     void foreignAnnotation() {
         String[] args = new JavadocArgsBuilder()
                 .addSource("GrpcInternalAnnotatedClass.java")
@@ -288,8 +292,9 @@ class ExcludeInternalDocletTest {
 
     @SuppressWarnings("CheckReturnValue")
     @Test
-    void not_throw_NPE_processing_null_values() {
-        ExcludeInternalDoclet doclet = new NullProcessingTestDoclet();
+    @DisplayName("accept `null` values")
+    void swallowNulls() {
+        ExcludeInternal doclet = new NullProcessingTestDoclet();
 
         assertDoesNotThrow(
                 () -> doclet.process(TestValues.nullRef(), void.class)
@@ -297,7 +302,7 @@ class ExcludeInternalDocletTest {
     }
 
     @SuppressWarnings("ConstantConditions") // Ok to not initialize ExcludePrinciple here.
-    private static class NullProcessingTestDoclet extends ExcludeInternalDoclet {
+    private static class NullProcessingTestDoclet extends ExcludeInternal {
 
         private NullProcessingTestDoclet() {
             super(null);
@@ -305,7 +310,7 @@ class ExcludeInternalDocletTest {
     }
 
     private static void cleanUpGeneratedJavadocs() {
-        Path javadocRoot = Paths.get(JavadocArgsBuilder.getJavadocDir());
+        Path javadocRoot = Paths.get(getJavadocDir());
 
         if (Files.exists(javadocRoot)) {
             try {

@@ -24,7 +24,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package io.spine.tools.javadoc;
+package io.spine.tools.javadoc.filter.doclet;
 
 import com.google.errorprone.annotations.Immutable;
 import com.sun.javadoc.ClassDoc;

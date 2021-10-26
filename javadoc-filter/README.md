@@ -10,7 +10,7 @@ This module relies on JDK 8 API.
 To use the doclet, specify the Javadoc options:
 
 ```
-javadoc -doclet ExcludeInternalDoclet -docletpath "classpathlist" ...
+javadoc -doclet ExcludeInternal -docletpath "classpathlist" ...
 ```
 
 ## Tests

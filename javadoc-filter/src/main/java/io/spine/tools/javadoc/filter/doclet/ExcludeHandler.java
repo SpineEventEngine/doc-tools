@@ -24,7 +24,9 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package io.spine.tools.javadoc;
+package io.spine.tools.javadoc.filter.doclet;
+
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
@@ -38,18 +40,19 @@ import static io.spine.util.Exceptions.illegalStateWithCauseOf;
  */
 final class ExcludeHandler implements InvocationHandler {
 
-    private final ExcludeInternalDoclet doclet;
+    private final ExcludeInternal doclet;
     private final Object target;
 
-    ExcludeHandler(ExcludeInternalDoclet doclet, Object target) {
+    ExcludeHandler(ExcludeInternal doclet, Object target) {
         this.doclet = doclet;
         this.target = target;
     }
 
     @Override
-    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+    public @Nullable Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
         if (args != null && IgnoredMethod.isIgnored(method.getName())) {
-            args[0] = unwrap(args[0]);
+            Object unwrapped = unwrap(args[0]);
+            args[0] = unwrapped;
         }
         try {
             Object result = doclet.process(method.invoke(target, args), method.getReturnType());
@@ -59,7 +62,7 @@ final class ExcludeHandler implements InvocationHandler {
         }
     }
 
-    private Object unwrap(Object proxy) {
+    private static Object unwrap(Object proxy) {
         if (proxy instanceof Proxy) {
             return ((ExcludeHandler) Proxy.getInvocationHandler(proxy)).target;
         }

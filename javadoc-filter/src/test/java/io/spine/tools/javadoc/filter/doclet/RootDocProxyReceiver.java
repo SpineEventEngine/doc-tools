@@ -24,12 +24,12 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package io.spine.tools.javadoc;
+package io.spine.tools.javadoc.filter.doclet;
 
 import com.sun.javadoc.RootDoc;
 import com.sun.tools.javadoc.Main;
 
-public class RootDocProxyReceiver extends ExcludeInternalDoclet {
+public final class RootDocProxyReceiver extends ExcludeInternal {
 
     @SuppressWarnings("StaticVariableMayNotBeInitialized") // Used only start invocation
     private static RootDoc rootDocProxy;
@@ -47,8 +47,8 @@ public class RootDocProxyReceiver extends ExcludeInternalDoclet {
 
     @SuppressWarnings("unused") // called by com.sun.tools.javadoc.Main
     public static boolean start(RootDoc root) {
-        Filter filter = new ExcludeInternal(root);
-        ExcludeInternalDoclet doclet = new ExcludeInternalDoclet(filter);
+        Filter filter = new Filter(root);
+        ExcludeInternal doclet = new ExcludeInternal(filter);
 
         // We can obtain RootDoc only here
         rootDocProxy = (RootDoc) doclet.process(root, root.getClass());

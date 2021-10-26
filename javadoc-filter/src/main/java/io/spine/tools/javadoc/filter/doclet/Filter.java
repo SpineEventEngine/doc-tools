@@ -24,7 +24,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package io.spine.tools.javadoc;
+package io.spine.tools.javadoc.filter.doclet;
 
 import com.google.common.collect.ImmutableSet;
 import com.sun.javadoc.PackageDoc;
@@ -33,15 +33,15 @@ import com.sun.javadoc.RootDoc;
 import io.spine.annotation.Internal;
 
 import java.util.Set;
+import java.util.function.Predicate;
 
 /**
- * Implementation of the {@linkplain Filter} interface for excluding documentation of elements
- * with {@linkplain Internal} annotation.
+ * Tests if a {@code ProgramElementDoc} represents a Java code annotated
+ * with {@link Internal} annotation.
  *
- * <p>Excludes all {@linkplain Internal}-annotated program elements, packages,
- * and their subpackages.
+ * <p>Excludes all program elements including packages and their subpackages.
  */
-final class ExcludeInternal implements Filter {
+final class Filter implements Predicate<ProgramElementDoc> {
 
     private final AnnotationCheck<Class<Internal>> internalAnnotation =
             new AnnotationCheck<>(Internal.class);
@@ -51,7 +51,7 @@ final class ExcludeInternal implements Filter {
      */
     private final Set<PackageDoc> excludedPackages;
 
-    ExcludeInternal(RootDoc root) {
+    Filter(RootDoc root) {
         PackageCollector packageCollector = new PackageCollector(internalAnnotation);
         Set<PackageDoc> collected = packageCollector.collect(root);
         this.excludedPackages = ImmutableSet.copyOf(collected);
