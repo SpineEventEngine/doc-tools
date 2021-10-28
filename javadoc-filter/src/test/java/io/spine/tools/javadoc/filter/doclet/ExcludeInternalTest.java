@@ -29,26 +29,20 @@ package io.spine.tools.javadoc.filter.doclet;
 import com.sun.javadoc.ClassDoc;
 import com.sun.javadoc.MethodDoc;
 import com.sun.javadoc.RootDoc;
-import io.spine.testing.TestValues;
 import io.spine.testing.logging.mute.MuteLogging;
-import io.spine.util.Exceptions;
-import org.junit.jupiter.api.AfterEach;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
-import java.io.IOException;
-import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
 
 import static com.google.common.truth.Truth.assertThat;
-import static io.spine.tools.javadoc.filter.doclet.JavadocArgsBuilder.getJavadocDir;
 import static io.spine.tools.javadoc.filter.doclet.RootDocProxyReceiver.rootDocFor;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 /**
  * Tests {@link ExcludeInternal}.
@@ -59,29 +53,58 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 @DisplayName("`ExcludeInternal` should")
 class ExcludeInternalTest {
 
+    /** The current directory of the user is where the build is executed. */
+    @SuppressWarnings("AccessOfSystemProperties") // Need to know project path
+    private static final String CURRENT_DIR = System.getProperty("user.dir");
+
+    /** The directory under the source tree with the source code to be used in the tests. */
+    private static final String RESOURCES_DIR = CURRENT_DIR + "/src/test/resources/";
+
+    /** The directory and the package for the source code used for the tests. */
     private static final String TEST_SOURCES_PACKAGE = "testsources";
+
     private static final String INTERNAL_PACKAGE = TEST_SOURCES_PACKAGE + ".internal";
     private static final String INTERNAL_METHOD_CLASS_FILENAME = "InternalMethodClass.java";
     private static final String INTERNAL_CLASS_FILENAME = "InternalClass.java";
-    private static final String DERIVED_FROM_INTERNAL_CLASS_FILENAME = "DerivedFromInternalClass.java";
+    private static final String DERIVED_FROM_INTERNAL_CLASS_FILENAME =
+            "DerivedFromInternalClass.java";
     private static final String NOT_INTERNAL_CLASS_FILENAME = "/notinternal/NotInternalClass.java";
 
-    @AfterEach
-    void tearDown() {
-        cleanUpGeneratedJavadocs();
+    private Path sourcePath;
+    private Path destination;
+
+    @BeforeEach
+    void createTempDir(@TempDir Path tempDir) {
+        sourcePath = Paths.get(RESOURCES_DIR);
+        destination = tempDir.resolve("javadoc");
+    }
+
+    @NonNull
+    private JavadocArgs createArgs() {
+        JavadocArgs args = new JavadocArgs();
+        args.setSourcePath(sourcePath)
+            .setDestination(destination);
+        return args;
+    }
+
+    /**
+     * Prepends the given source file reference with the
+     * {@linkplain #TEST_SOURCES_PACKAGE package name} used for the source code in these tests.
+     */
+    private static String src(String sourceFile) {
+        return TEST_SOURCES_PACKAGE + '/' + sourceFile;
     }
 
     @Test
     @DisplayName("run standard doclet")
     void runStandardDoclet() {
-        String[] args = new JavadocArgsBuilder()
-                .addSource(NOT_INTERNAL_CLASS_FILENAME)
+        String[] args = createArgs()
+                .addSource(src(NOT_INTERNAL_CLASS_FILENAME))
                 .build();
 
         ExcludeInternal.main(args);
 
-        Path javadocs = Paths.get(getJavadocDir());
-        assertThat(Files.exists(javadocs))
+        assertThat(Files.exists(destination))
                 .isTrue();
     }
 
@@ -92,8 +115,8 @@ class ExcludeInternalTest {
         @Test
         @DisplayName("annotated annotations")
         void annotatedAnnotations() {
-            String[] args = new JavadocArgsBuilder()
-                    .addSource("InternalAnnotatedAnnotation.java")
+            String[] args = createArgs()
+                    .addSource(src("InternalAnnotatedAnnotation.java"))
                     .build();
 
             RootDoc rootDoc = rootDocFor(args);
@@ -105,8 +128,8 @@ class ExcludeInternalTest {
         @Test
         @DisplayName("internal constructors")
         void ctors() {
-            String[] args = new JavadocArgsBuilder()
-                    .addSource("InternalCtorClass.java")
+            String[] args = createArgs()
+                    .addSource(src("InternalCtorClass.java"))
                     .build();
 
             RootDoc rootDoc = rootDocFor(args);
@@ -119,8 +142,8 @@ class ExcludeInternalTest {
         @Test
         @DisplayName("fields")
         void fields() {
-            String[] args = new JavadocArgsBuilder()
-                    .addSource("InternalFieldClass.java")
+            String[] args = createArgs()
+                    .addSource(src("InternalFieldClass.java"))
                     .build();
 
             RootDoc rootDoc = rootDocFor(args);
@@ -133,8 +156,8 @@ class ExcludeInternalTest {
         @Test
         @DisplayName("methods")
         void methods() {
-            String[] args = new JavadocArgsBuilder()
-                    .addSource(INTERNAL_METHOD_CLASS_FILENAME)
+            String[] args = createArgs()
+                    .addSource(src(INTERNAL_METHOD_CLASS_FILENAME))
                     .build();
 
             RootDoc rootDoc = rootDocFor(args);
@@ -151,8 +174,8 @@ class ExcludeInternalTest {
         @Test
         @DisplayName("package content")
         void packageContent() {
-            String[] args = new JavadocArgsBuilder()
-                    .addSource("/internal/InternalPackageClass.java")
+            String[] args = createArgs()
+                    .addSource(src("/internal/InternalPackageClass.java"))
                     .build();
 
             RootDoc rootDoc = rootDocFor(args);
@@ -164,8 +187,8 @@ class ExcludeInternalTest {
         @Test
         @DisplayName("classes")
         void classes() {
-            String[] args = new JavadocArgsBuilder()
-                    .addSource(INTERNAL_CLASS_FILENAME)
+            String[] args = createArgs()
+                    .addSource(src(INTERNAL_CLASS_FILENAME))
                     .build();
 
             RootDoc rootDoc = rootDocFor(args);
@@ -177,8 +200,8 @@ class ExcludeInternalTest {
         @Test
         @DisplayName("interfaces")
         void interfaces() {
-            String[] args = new JavadocArgsBuilder()
-                    .addSource("InternalAnnotatedInterface.java")
+            String[] args = createArgs()
+                    .addSource(src("InternalAnnotatedInterface.java"))
                     .build();
 
             RootDoc rootDoc = rootDocFor(args);
@@ -190,8 +213,8 @@ class ExcludeInternalTest {
         @Test
         @DisplayName("enums")
         void enums() {
-            String[] args = new JavadocArgsBuilder()
-                    .addSource("InternalEnum.java")
+            String[] args = createArgs()
+                    .addSource(src("InternalEnum.java"))
                     .build();
 
             RootDoc rootDoc = rootDocFor(args);
@@ -204,9 +227,9 @@ class ExcludeInternalTest {
     @Test
     @DisplayName("exclude only from internal subpackages")
     void excludeOnlyFromInternalSubpackages() {
-        String[] args = new JavadocArgsBuilder()
-                .addSource("/internal/subinternal/SubInternalPackageClass.java")
-                .addSource(NOT_INTERNAL_CLASS_FILENAME)
+        String[] args = createArgs()
+                .addSource(src("/internal/subinternal/SubInternalPackageClass.java"))
+                .addSource(src(NOT_INTERNAL_CLASS_FILENAME))
                 .addPackage(INTERNAL_PACKAGE)
                 .addPackage(TEST_SOURCES_PACKAGE + ".notinternal")
                 .build();
@@ -224,8 +247,8 @@ class ExcludeInternalTest {
     @Test
     @DisplayName("not use `@Internal` annotation from other libraries or frameworks")
     void foreignAnnotation() {
-        String[] args = new JavadocArgsBuilder()
-                .addSource("GrpcInternalAnnotatedClass.java")
+        String[] args = createArgs()
+                .addSource(src("GrpcInternalAnnotatedClass.java"))
                 .build();
 
         RootDoc rootDoc = rootDocFor(args);
@@ -241,9 +264,9 @@ class ExcludeInternalTest {
         @Test
         @DisplayName("compareTo() on a class derived from internal")
         void handleDerivedClasses() {
-            String[] args = new JavadocArgsBuilder()
-                    .addSource(INTERNAL_CLASS_FILENAME)
-                    .addSource(DERIVED_FROM_INTERNAL_CLASS_FILENAME)
+            String[] args = createArgs()
+                    .addSource(src(INTERNAL_CLASS_FILENAME))
+                    .addSource(src(DERIVED_FROM_INTERNAL_CLASS_FILENAME))
                     .build();
 
             RootDoc rootDoc = rootDocFor(args);
@@ -261,9 +284,9 @@ class ExcludeInternalTest {
         @Test
         @DisplayName("overridden methods")
         void handleOverriddenMethod() {
-            String[] args = new JavadocArgsBuilder()
-                    .addSource(INTERNAL_METHOD_CLASS_FILENAME)
-                    .addSource("OverridesInternalMethod.java")
+            String[] args = createArgs()
+                    .addSource(src(INTERNAL_METHOD_CLASS_FILENAME))
+                    .addSource(src("OverridesInternalMethod.java"))
                     .build();
 
             RootDoc rootDoc = rootDocFor(args);
@@ -284,9 +307,9 @@ class ExcludeInternalTest {
         @Test
         @DisplayName("subclassOf() invocation")
         void subclassOf() {
-            String[] args = new JavadocArgsBuilder()
-                    .addSource(INTERNAL_CLASS_FILENAME)
-                    .addSource(DERIVED_FROM_INTERNAL_CLASS_FILENAME)
+            String[] args = createArgs()
+                    .addSource(src(INTERNAL_CLASS_FILENAME))
+                    .addSource(src(DERIVED_FROM_INTERNAL_CLASS_FILENAME))
                     .build();
 
             RootDoc rootDoc = rootDocFor(args);
@@ -299,55 +322,6 @@ class ExcludeInternalTest {
 
             assertThat(rootDoc.specifiedClasses())
                     .hasLength(1);
-        }
-    }
-
-    @SuppressWarnings("CheckReturnValue")
-    @Test
-    @DisplayName("accept `null` values")
-    void swallowNulls() {
-        ExcludeInternal doclet = new NullProcessingTestDoclet();
-
-        assertDoesNotThrow(
-                () -> doclet.process(TestValues.nullRef(), void.class)
-        );
-    }
-
-    @SuppressWarnings("ConstantConditions") // Ok to not initialize ExcludePrinciple here.
-    private static class NullProcessingTestDoclet extends ExcludeInternal {
-
-        private NullProcessingTestDoclet() {
-            super(null);
-        }
-    }
-
-    private static void cleanUpGeneratedJavadocs() {
-        Path javadocRoot = Paths.get(getJavadocDir());
-
-        if (Files.exists(javadocRoot)) {
-            try {
-                Files.walkFileTree(javadocRoot, new FileRemover());
-            } catch (IOException e) {
-                throw Exceptions.illegalStateWithCauseOf(e);
-            }
-        }
-    }
-
-    /**
-     * Deletes files and directories.
-     */
-    private static class FileRemover extends SimpleFileVisitor<Path> {
-
-        @Override
-        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-            Files.delete(file);
-            return FileVisitResult.CONTINUE;
-        }
-
-        @Override
-        public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-            Files.delete(dir);
-            return FileVisitResult.CONTINUE;
         }
     }
 }
