@@ -24,6 +24,6 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-val mcVersion by extra("0.1.1")
-val spineBaseVersion by extra("2.0.0-SNAPSHOT.70")
-val versionToPublish by extra("0.1.3")
+val spineBaseVersion by extra("2.0.0-SNAPSHOT.74")
+val toolBaseVersion by extra("2.0.0-SNAPSHOT.74")
+val versionToPublish by extra("2.0.0-SNAPSHOT.74")

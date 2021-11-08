@@ -44,6 +44,8 @@ import io.spine.internal.gradle.applyStandard
 import io.spine.internal.gradle.checkstyle.CheckStyleConfig
 import io.spine.internal.gradle.excludeProtobufLite
 import io.spine.internal.gradle.forceVersions
+import io.spine.internal.gradle.javac.configureErrorProne
+import io.spine.internal.gradle.javac.configureJavac
 import io.spine.internal.gradle.javadoc.JavadocConfig
 import io.spine.internal.gradle.publish.Publish.Companion.publishProtoArtifact
 import io.spine.internal.gradle.publish.PublishingRepos
@@ -52,6 +54,8 @@ import io.spine.internal.gradle.publish.spinePublishing
 import io.spine.internal.gradle.report.coverage.JacocoConfig
 import io.spine.internal.gradle.report.license.LicenseReporter
 import io.spine.internal.gradle.report.pom.PomGenerator
+import io.spine.internal.gradle.test.configureLogging
+import io.spine.internal.gradle.test.registerTestTasks
 import java.util.*
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
@@ -62,7 +66,7 @@ plugins {
         id(id).version(version)
     }
     io.spine.internal.dependency.ErrorProne.GradlePlugin.apply {
-        id(id).version(version)
+        id(id)
     }
     kotlin("jvm") version io.spine.internal.dependency.Kotlin.version
 }
@@ -99,11 +103,9 @@ subprojects {
         plugin("pmd-settings")
         plugin(Protobuf.GradlePlugin.id)
 
-        from(Scripts.javacArgs(project))
         from(Scripts.testOutput(project))
         from(Scripts.testArtifacts(project))
     }
-
 
     dependencies {
         errorprone(ErrorProne.core)
@@ -145,6 +147,11 @@ subprojects {
 
     JavadocConfig.applyTo(project)
     CheckStyleConfig.applyTo(project)
+
+    tasks.withType<JavaCompile> {
+        configureJavac()
+        configureErrorProne()
+    }
 
     kotlin {
         explicitApi()
@@ -209,9 +216,12 @@ subprojects {
     publishProtoArtifact(project)
     LicenseReporter.generateReportIn(project)
 
-    apply {
-        from(Scripts.slowTests(project))
-        from(Scripts.testOutput(project))
+    tasks {
+        registerTestTasks()
+    }
+
+    tasks.withType<Test> {
+        configureLogging()
     }
 
     protobuf {
