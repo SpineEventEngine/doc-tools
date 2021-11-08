@@ -38,16 +38,16 @@ import org.gradle.kotlin.dsl.extra
  */
 class Spine(p: Project) {
 
-    val base = "io.spine:spine-base:${p.spineVersion}"
-    val testlib = "io.spine.tools:spine-testlib:${p.spineVersion}"
+    val base = "io.spine:spine-base:${p.spineBaseVersion}"
+    val testlib = "io.spine.tools:spine-testlib:${p.spineBaseVersion}"
 
-    val toolBase = "io.spine.tools:spine-tool-base:${p.mcVersion}"
-    val pluginBase = "io.spine.tools:spine-plugin-base:${p.mcVersion}"
-    val pluginTestlib = "io.spine.tools:spine-plugin-testlib:${p.mcVersion}"
-    val modelCompiler = "io.spine.tools:spine-model-compiler:${p.mcVersion}"
+    val toolBase = "io.spine.tools:spine-tool-base:${p.toolBaseVersion}"
+    val pluginBase = "io.spine.tools:spine-plugin-base:${p.toolBaseVersion}"
+    val pluginTestlib = "io.spine.tools:spine-plugin-testlib:${p.toolBaseVersion}"
 
-    private val Project.spineVersion: String
+    private val Project.spineBaseVersion: String
         get() = extra["spineBaseVersion"] as String
-    private val Project.mcVersion: String
-        get() = extra["mcVersion"] as String
+
+    private val Project.toolBaseVersion: String
+        get() = extra["toolBaseVersion"] as String
 }
