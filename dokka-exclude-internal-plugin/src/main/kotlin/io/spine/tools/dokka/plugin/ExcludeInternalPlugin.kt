@@ -24,10 +24,29 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-rootProject.name = "javadoc-tools"
+package io.spine.tools.dokka.plugin
 
-include(
-    "javadoc-filter",
-    "javadoc-style",
-    "dokka-exclude-internal-plugin"
-)
+import org.jetbrains.dokka.base.DokkaBase
+import org.jetbrains.dokka.plugability.DokkaPlugin
+import org.jetbrains.dokka.plugability.Extension
+import org.jetbrains.dokka.transformers.documentation.PreMergeDocumentableTransformer
+
+/**
+ * Dokka has several extensions points at different stages of generating documentation. The plugin
+ * below injects the [ExcludeInternalTransformer] at the stage when the source code of a project is
+ * already collected and translated to Dokka internal representation
+ * [org.jetbrains.dokka.model.Documentable].
+ *
+ * @see <a href="https://kotlin.github.io/dokka/1.6.10/developer_guide/introduction/">
+ *     Guide to Dokka Plugin development</a>
+ *
+ * @see <a href="https://kotlin.github.io/dokka/1.6.10/developer_guide/extension_points/#pre-merge-documentation-transform">
+ *     Pre-merge documentation transform</a>
+ */
+public class ExcludeInternalPlugin : DokkaPlugin() {
+    private val dokkaBase by lazy { plugin<DokkaBase>() }
+
+    public val excludeInternalTransformer: Extension<PreMergeDocumentableTransformer, *, *> by extending {
+        dokkaBase.preMergeDocumentableTransformer providing ::ExcludeInternalTransformer
+    }
+}
