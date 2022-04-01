@@ -1,4 +1,4 @@
-# Javadoc Tools
+# Doc Tools
 This repository contains tools for working with Javadoc:
 
  * [`ExcludeInternal`](javadoc-filter/README.md) — a Doclet for removing Javadocs for types
