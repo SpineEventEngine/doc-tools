@@ -32,10 +32,20 @@ import org.jetbrains.dokka.plugability.Extension
 import org.jetbrains.dokka.transformers.documentation.PreMergeDocumentableTransformer
 
 /**
- * Dokka has several extensions points at different stages of generating documentation. The plugin
+ * Dokka plugin which excludes code annotated with [io.spine.annotation.Internal].
+ *
+ * There are several extensions points at different stages of generating documentation. The plugin
  * below injects the [ExcludeInternalTransformer] at the stage when the source code of a project is
- * already collected and translated to Dokka internal representation
+ * already collected and translated to the Dokka internal representation
  * [org.jetbrains.dokka.model.Documentable].
+ *
+ * Dokka looks for [DokkaPlugin] subclasses on its classpath during setup using
+ * [java.util.ServiceLoader]. The way you use this plugin is provided below:
+ * ```
+ * dependencies {
+ *      dokkaPlugin("io.spine.tools:spine-dokka-exclude-internal-plugin:${version}")
+ * }
+ * ```
  *
  * @see <a href="https://kotlin.github.io/dokka/1.6.10/developer_guide/introduction/">
  *     Guide to Dokka Plugin development</a>

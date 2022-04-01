@@ -35,38 +35,61 @@ import org.jetbrains.dokka.model.properties.WithExtraProperties
 import org.jetbrains.dokka.plugability.DokkaContext
 
 /**
- * This transformer excludes from documentation everything annotated with [Internal].
+ * Excludes everything annotated with [Internal] from the resulting documentation.
+ * Everything here means packages, types, fields, and methods.
  */
 public class ExcludeInternalTransformer(dokkaContext: DokkaContext) :
     SuppressedByConditionDocumentableFilterTransformer(dokkaContext) {
 
     /**
-     * [WithExtraProperties] is a Dokka-interface which adds a map-field for extra properties.
-     * The information about applied annotations can be found in this map.
+     * The method overrides a `Template Method` provided by Dokka to provide custom criteria by
+     * which it should drop a certain [Documentable] from the resulting documentation.
      *
-     * Not every [Documentable] subclass implements this interface.
+     * In this case, the criteria is the presence of the [Internal] annotation among annotations
+     * applied to [Documentable].
      */
-    override fun shouldBeSuppressed(d: Documentable): Boolean =
-        (d is WithExtraProperties<*>) && hasInternalAnnotation(d)
+    override fun shouldBeSuppressed(d: Documentable): Boolean {
+        /**
+         * [WithExtraProperties] is a Dokka-interface that adds a map-field for extra properties.
+         * The information about applied annotations is present in this map.
+         *
+         * Not every [Documentable] subclass implements this interface.
+         */
+        return (d is WithExtraProperties<*>) && hasInternalAnnotation(d)
+    }
+
 
     private fun hasInternalAnnotation(annotated: WithExtraProperties<*>): Boolean =
         annotated.annotations().any(InternalAnnotationCheck::test)
 
+
     /**
-     * We extract from the map-field, which was added by implementing [WithExtraProperties],
-     * all values with type of [Annotations], which is a container-class for all applied annotations.
-     * Then from every [Annotations] object we extract list of annotations and all these lists are
-     * merged by `flatMap` operation.
+     * Extract from the map-field added by implementing [WithExtraProperties] information
+     * about annotations applied to the piece of code it represents.
      */
-    private fun WithExtraProperties<*>.annotations(): List<Annotation> =
-        this.extra.allOfType<Annotations>().flatMap {
+    private fun WithExtraProperties<*>.annotations(): List<Annotation> {
+        /**
+         * All values with the type of [Annotations], a container-class for all applied
+         * annotations, are extracted from the map-field. Then plain lists of [Annotation] are
+         * extracted from every [Annotations] object and merged into the result list.
+         */
+        return this.extra.allOfType<Annotations>().flatMap {
             it.directAnnotations.values.flatten()
         }
+    }
 
+    /**
+     * Provides the method to check if an [Annotation] object represents [Internal] annotation.
+     */
     private object InternalAnnotationCheck {
         private val c = Internal::class.java
 
-        fun test(a: Annotation): Boolean =
-            a.dri.packageName == c.`package`.name && a.dri.classNames == c.simpleName
+        /**
+         * Compares the package and the class extracted from an [Annotation] object with the package
+         * and the class of the [Internal] annotation.
+         */
+        fun test(a: Annotation): Boolean {
+            return a.dri.packageName == c.`package`.name && a.dri.classNames == c.simpleName
+        }
     }
 }
