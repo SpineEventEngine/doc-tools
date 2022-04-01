@@ -29,5 +29,5 @@ rootProject.name = "doc-tools"
 include(
     "javadoc-filter",
     "javadoc-style",
-    "dokka-exclude-internal-plugin"
+    "dokka-extensions"
 )
