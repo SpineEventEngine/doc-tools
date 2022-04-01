@@ -36,17 +36,17 @@ import org.jetbrains.dokka.plugability.DokkaContext
 
 /**
  * Excludes everything annotated with [Internal] from the resulting documentation.
- * Everything here means packages, types, fields, and methods.
+ *
+ * Works for packages, types, fields and methods.
  */
 public class ExcludeInternalTransformer(dokkaContext: DokkaContext) :
     SuppressedByConditionDocumentableFilterTransformer(dokkaContext) {
 
     /**
-     * The method overrides a `Template Method` provided by Dokka to provide custom criteria by
-     * which it should drop a certain [Documentable] from the resulting documentation.
+     * Tells whether the passed [Documentable] should be excluded from the documentation.
      *
-     * In this case, the criteria is the presence of the [Internal] annotation among annotations
-     * applied to [Documentable].
+     * Returns `true` if the passed piece is annotated with the [Internal] annotation. Otherwise,
+     * returns `false`.
      */
     override fun shouldBeSuppressed(d: Documentable): Boolean {
         /**
@@ -58,20 +58,20 @@ public class ExcludeInternalTransformer(dokkaContext: DokkaContext) :
         return (d is WithExtraProperties<*>) && hasInternalAnnotation(d)
     }
 
-
     private fun hasInternalAnnotation(annotated: WithExtraProperties<*>): Boolean =
         annotated.annotations().any(InternalAnnotationCheck::test)
 
-
     /**
-     * Extract from the map-field added by implementing [WithExtraProperties] information
-     * about annotations applied to the piece of code it represents.
+     * Extracts annotations from a [WithExtraProperties] object.
+     *
+     * Information about annotations is found in the map-field `extra`, added when implementing
+     * [WithExtraProperties].
      */
     private fun WithExtraProperties<*>.annotations(): List<Annotation> {
         /**
-         * All values with the type of [Annotations], a container-class for all applied
-         * annotations, are extracted from the map-field. Then plain lists of [Annotation] are
-         * extracted from every [Annotations] object and merged into the result list.
+         * All values with the type of [Annotations], a container-class for all applied annotations,
+         * are extracted from the map-field. Then plain lists of [Annotation] are extracted from
+         * every [Annotations] object and merged into the result list.
          */
         return this.extra.allOfType<Annotations>().flatMap {
             it.directAnnotations.values.flatten()
@@ -85,7 +85,9 @@ public class ExcludeInternalTransformer(dokkaContext: DokkaContext) :
         private val c = Internal::class.java
 
         /**
-         * Compares the package and the class extracted from an [Annotation] object with the package
+         * Checks if provided object represents [Internal] annotation.
+         *
+         * Compares the package and the class extracted from the object with the package
          * and the class of the [Internal] annotation.
          */
         fun test(a: Annotation): Boolean {
