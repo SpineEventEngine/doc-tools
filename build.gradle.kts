@@ -38,7 +38,6 @@ import io.spine.internal.dependency.JUnit
 import io.spine.internal.dependency.Protobuf
 import io.spine.internal.dependency.Truth
 import io.spine.internal.gradle.IncrementGuard
-import io.spine.internal.gradle.Scripts
 import io.spine.internal.gradle.VersionWriter
 import io.spine.internal.gradle.applyStandard
 import io.spine.internal.gradle.checkstyle.CheckStyleConfig
@@ -47,7 +46,6 @@ import io.spine.internal.gradle.forceVersions
 import io.spine.internal.gradle.javac.configureErrorProne
 import io.spine.internal.gradle.javac.configureJavac
 import io.spine.internal.gradle.javadoc.JavadocConfig
-import io.spine.internal.gradle.publish.Publish.Companion.publishProtoArtifact
 import io.spine.internal.gradle.publish.PublishingRepos
 import io.spine.internal.gradle.publish.PublishingRepos.gitHub
 import io.spine.internal.gradle.publish.spinePublishing
@@ -56,6 +54,7 @@ import io.spine.internal.gradle.report.license.LicenseReporter
 import io.spine.internal.gradle.report.pom.PomGenerator
 import io.spine.internal.gradle.test.configureLogging
 import io.spine.internal.gradle.test.registerTestTasks
+import io.spine.internal.gradle.testing.exposeTestConfiguration
 import java.util.*
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
@@ -63,22 +62,21 @@ plugins {
     `java-library`
     idea
     io.spine.internal.dependency.Protobuf.GradlePlugin.apply {
-        id(id).version(version)
+        id(id)
     }
     io.spine.internal.dependency.ErrorProne.GradlePlugin.apply {
         id(id)
     }
-    kotlin("jvm") version io.spine.internal.dependency.Kotlin.version
+    kotlin("jvm")
 }
 
 spinePublishing {
-    projectsToPublish.addAll(subprojects.map { it.path })
-    targetRepositories.addAll(
+    modules = subprojects.map { it.path }.toSet()
+    destinations = setOf(
         PublishingRepos.cloudRepo,
         PublishingRepos.cloudArtifactRegistry,
         gitHub("javadoc-tools")
     )
-    spinePrefix.set(true)
 }
 
 allprojects {
@@ -102,9 +100,6 @@ subprojects {
         plugin("net.ltgt.errorprone")
         plugin("pmd-settings")
         plugin(Protobuf.GradlePlugin.id)
-
-        from(Scripts.testOutput(project))
-        from(Scripts.testArtifacts(project))
     }
 
     dependencies {
@@ -143,6 +138,7 @@ subprojects {
     java {
         sourceCompatibility = javaVersion
         targetCompatibility = javaVersion
+        exposeTestConfiguration()
     }
 
     JavadocConfig.applyTo(project)
@@ -213,7 +209,6 @@ subprojects {
 
     apply<IncrementGuard>()
     apply<VersionWriter>()
-    publishProtoArtifact(project)
     LicenseReporter.generateReportIn(project)
 
     tasks {

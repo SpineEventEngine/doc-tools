@@ -1,5 +1,5 @@
 /*
- * Copyright 2021, TeamDev. All rights reserved.
+ * Copyright 2022, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,9 +57,11 @@ object CheckStyleConfig {
             plugin(CheckstylePlugin::class.java)
         }
 
+        val configDir = project.rootDir.resolve("config/quality/")
+
         with(project.the<CheckstyleExtension>()) {
             toolVersion = CheckStyle.version
-            configFile = project.rootDir.resolve("config/quality/checkstyle.xml")
+            configDirectory.set(configDir)
         }
 
         project.afterEvaluate {
