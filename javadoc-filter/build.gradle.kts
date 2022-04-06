@@ -29,7 +29,6 @@ import io.spine.internal.dependency.Grpc
 import io.spine.internal.dependency.Spine
 
 dependencies {
-    implementation(files("${System.getProperty("java.home")}/../lib/tools.jar"))
     implementation(JavaX.annotations)
     implementation(Grpc.core)
     val spine = Spine(project)

@@ -27,15 +27,19 @@
 package io.spine.tools.javadoc.filter.doclet;
 
 import com.google.errorprone.annotations.Immutable;
-import com.sun.javadoc.AnnotationDesc;
-import com.sun.javadoc.ProgramElementDoc;
 
+import javax.lang.model.element.AnnotationMirror;
+import javax.lang.model.element.Element;
+import javax.lang.model.element.PackageElement;
+import javax.lang.model.element.QualifiedNameable;
 import java.lang.annotation.Annotation;
+import java.util.Collection;
 
 /**
  * Provides the methods to check if a program element has specified annotation.
  *
- * @param <C> the type of an annotation to check
+ * @param <C>
+ *         the type of an annotation to check
  */
 @Immutable
 final class AnnotationCheck<C extends Class<? extends Annotation>> {
@@ -46,26 +50,25 @@ final class AnnotationCheck<C extends Class<? extends Annotation>> {
         this.annotationClass = annotationClass;
     }
 
-    boolean test(ProgramElementDoc doc) {
-        return isAnnotationPresent(doc.annotations());
+    boolean test(Element doc) {
+        return isAnnotationPresent(doc.getAnnotationMirrors());
     }
 
-    boolean test(com.sun.javadoc.PackageDoc doc) {
-        return isAnnotationPresent(doc.annotations());
+    boolean test(PackageElement doc) {
+        return isAnnotationPresent(doc.getAnnotationMirrors());
     }
 
-    private boolean isAnnotationPresent(AnnotationDesc[] annotations) {
-        for (AnnotationDesc ann : annotations) {
-            if (matchesName(ann)) {
-                return true;
-            }
-        }
-        return false;
+    private boolean isAnnotationPresent(Collection<? extends AnnotationMirror> annotations) {
+        return annotations.stream()
+                .anyMatch(this::matchesName);
     }
 
-    private boolean matchesName(AnnotationDesc annotation) {
-        return annotation.annotationType()
-                         .qualifiedTypeName()
-                         .equals(annotationClass.getName());
+    private boolean matchesName(AnnotationMirror annotation) {
+        var annotationElement = (QualifiedNameable) annotation.getAnnotationType()
+                                                              .asElement();
+        return annotationElement.getQualifiedName()
+                                .toString()
+                                .equals(annotationClass.getName());
     }
 }
+

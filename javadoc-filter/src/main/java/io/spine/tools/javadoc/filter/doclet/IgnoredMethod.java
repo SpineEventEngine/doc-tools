@@ -26,15 +26,12 @@
 
 package io.spine.tools.javadoc.filter.doclet;
 
-import com.sun.javadoc.MethodDoc;
-import com.sun.tools.doclets.standard.Standard;
-import com.sun.tools.javadoc.MethodDocImpl;
-
 /**
- * Enumeration of method names used in {@linkplain Standard} doclet implementation,
+ * Enumeration of method names used in {@linkplain jdk.javadoc.doclet.StandardDoclet} doclet
+ * implementation,
  * that cast parameter represented by interface to concrete implementation type.
  *
- * <p>For example {@linkplain MethodDocImpl#overrides(MethodDoc)}:
+ * <p>For example {@linkplain }:
  * <pre> {@code
  *   public boolean overrides(MethodDoc meth) {
  *       MethodSymbol overridee = ((MethodDocImpl) meth).sym;

@@ -27,11 +27,12 @@
 package io.spine.tools.javadoc.filter.doclet;
 
 import com.google.common.collect.ImmutableSet;
-import com.sun.javadoc.PackageDoc;
-import com.sun.javadoc.ProgramElementDoc;
-import com.sun.javadoc.RootDoc;
 import io.spine.annotation.Internal;
+import jdk.javadoc.doclet.DocletEnvironment;
 
+import javax.lang.model.element.Element;
+import javax.lang.model.element.ElementKind;
+import javax.lang.model.element.PackageElement;
 import java.util.Set;
 import java.util.function.Predicate;
 
@@ -41,7 +42,7 @@ import java.util.function.Predicate;
  *
  * <p>Excludes all program elements including packages and their subpackages.
  */
-final class Filter implements Predicate<ProgramElementDoc> {
+final class Filter implements Predicate<Element> {
 
     private final AnnotationCheck<Class<Internal>> internalAnnotation =
             new AnnotationCheck<>(Internal.class);
@@ -49,16 +50,16 @@ final class Filter implements Predicate<ProgramElementDoc> {
     /**
      * Packages to be excluded in the passed documentation root.
      */
-    private final Set<PackageDoc> excludedPackages;
+    private final Set<PackageElement> excludedPackages;
 
-    Filter(RootDoc root) {
+    Filter(DocletEnvironment root) {
         PackageCollector packageCollector = new PackageCollector(internalAnnotation);
-        Set<PackageDoc> collected = packageCollector.collect(root);
+        Set<PackageElement> collected = packageCollector.collect(root);
         this.excludedPackages = ImmutableSet.copyOf(collected);
     }
 
     @Override
-    public boolean test(ProgramElementDoc element) {
+    public boolean test(Element element) {
         return internalAnnotation.test(element) || inExclusions(element);
     }
 
@@ -66,13 +67,25 @@ final class Filter implements Predicate<ProgramElementDoc> {
      * Tells if a package of the passed element is one of the {@link #excludedPackages},
      * or is a sub-package of one of them.
      */
-    private boolean inExclusions(ProgramElementDoc element) {
-        String packageName = element.containingPackage().name();
-        for (PackageDoc exclusion : excludedPackages) {
-            if (packageName.startsWith(exclusion.name())) {
+    private boolean inExclusions(Element element) {
+        String packageName = containingPackage(element).getQualifiedName()
+                                                       .toString();
+        for (PackageElement exclusion : excludedPackages) {
+            if (packageName.startsWith(exclusion.getQualifiedName()
+                                                .toString())) {
                 return true;
             }
         }
         return false;
+    }
+
+    private PackageElement containingPackage(Element el) {
+        Element p = el;
+
+        while (p.getKind() != ElementKind.PACKAGE) {
+            p = p.getEnclosingElement();
+        }
+
+        return (PackageElement) p;
     }
 }

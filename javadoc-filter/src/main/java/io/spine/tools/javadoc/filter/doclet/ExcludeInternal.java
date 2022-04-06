@@ -26,14 +26,14 @@
 
 package io.spine.tools.javadoc.filter.doclet;
 
-import com.sun.javadoc.ProgramElementDoc;
-import com.sun.javadoc.RootDoc;
-import com.sun.tools.doclets.standard.Standard;
 import com.sun.tools.javadoc.Main;
 import io.spine.annotation.Internal;
+import jdk.javadoc.doclet.DocletEnvironment;
+import jdk.javadoc.doclet.StandardDoclet;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import javax.lang.model.element.Element;
 import java.lang.reflect.Array;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
@@ -41,14 +41,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Extension of {@linkplain Standard} doclet, which excludes
+ * Extension of {@linkplain StandardDoclet} doclet, which excludes
  * {@linkplain Internal}-annotated components.
  *
  * <p>Use it to generate documentation for audience, that should not know about
  * {@linkplain Internal}-annotated components.
  *
- * <p>Works by pre-processing a {@linkplain RootDoc}.
- * The doclet creates new {@linkplain RootDoc},
+ * <p>Works by pre-processing a {@linkplain DocletEnvironment}.
+ * The doclet creates new {@linkplain DocletEnvironment},
  * that does not contain {@linkplain Internal}-annotated components and further generates documents.
  *
  * <p>You can use the non-standard doclet by specifying the following Javadoc options:
@@ -65,7 +65,7 @@ import java.util.List;
  * except {@linkplain Internal}-annotated components.
  */
 @SuppressWarnings("ExtendsUtilityClass")
-public class ExcludeInternal extends Standard {
+public class ExcludeInternal extends StandardDoclet {
 
     private final Filter filter;
 
@@ -77,7 +77,8 @@ public class ExcludeInternal extends Standard {
     /**
      * Entry point for the Javadoc tool.
      *
-     * @param args the command-line parameters
+     * @param args
+     *         the command-line parameters
      */
     public static void main(String[] args) {
         String name = ExcludeInternal.class.getName();
@@ -93,20 +94,23 @@ public class ExcludeInternal extends Standard {
      *         {@code false} otherwise
      */
     @SuppressWarnings({"unused", "RedundantSuppression"}) // called by com.sun.tools.javadoc.Main
-    public static boolean start(RootDoc root) {
+    public static boolean start(DocletEnvironment root) {
         Filter filter = new Filter(root);
         ExcludeInternal doclet = new ExcludeInternal(filter);
-        RootDoc rootDoc = (RootDoc) doclet.process(root, RootDoc.class);
-        boolean result = Standard.start(rootDoc);
+        DocletEnvironment rootDoc = (DocletEnvironment) doclet.process(root,
+                                                                       DocletEnvironment.class);
+        boolean result = new StandardDoclet().run(rootDoc);
         return result;
     }
 
     /**
      * Creates proxy of "com.sun..." interfaces and excludes
-     * {@linkplain ProgramElementDoc}s using {@linkplain #filter}.
+     * {@linkplain Element}s using {@linkplain #filter}.
      *
-     * @param returnValue the value to process
-     * @param returnValueType the expected type of value
+     * @param returnValue
+     *         the value to process
+     * @param returnValueType
+     *         the expected type of value
      * @return the processed value
      */
     @Nullable
@@ -133,8 +137,8 @@ public class ExcludeInternal extends Standard {
         Object[] array = returnValue;
         List<Object> list = new ArrayList<>();
         for (Object entry : array) {
-            if (!(entry instanceof ProgramElementDoc
-                    && filter.test((ProgramElementDoc) entry))) {
+            if (!(entry instanceof Element
+                    && filter.test((Element) entry))) {
                 list.add(process(entry, componentType));
             }
         }
