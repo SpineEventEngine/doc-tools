@@ -26,66 +26,50 @@
 
 package io.spine.tools.javadoc.filter.doclet;
 
-import com.google.common.collect.ImmutableSet;
 import io.spine.annotation.Internal;
 import jdk.javadoc.doclet.DocletEnvironment;
 
 import javax.lang.model.element.Element;
-import javax.lang.model.element.ElementKind;
-import javax.lang.model.element.PackageElement;
-import java.util.Set;
+import javax.lang.model.util.Elements;
 import java.util.function.Predicate;
 
 /**
- * Tests if a {@code ProgramElementDoc} represents a Java code annotated
- * with {@link Internal} annotation.
+ * Tests if an {@link Element} represents a program element annotated with {@link Internal}
+ * annotation.
  *
- * <p>Excludes all program elements including packages and their subpackages.
+ * Excludes all program elements including packages and their subpackages.
  */
 final class Filter implements Predicate<Element> {
 
     private final AnnotationCheck<Class<Internal>> internalAnnotation =
             new AnnotationCheck<>(Internal.class);
 
-    /**
-     * Packages to be excluded in the passed documentation root.
-     */
-    private final Set<PackageElement> excludedPackages;
+    private final Packages excludedPackages;
+    private final Elements elementUtils;
 
-    Filter(DocletEnvironment root) {
-        PackageCollector packageCollector = new PackageCollector(internalAnnotation);
-        Set<PackageElement> collected = packageCollector.collect(root);
-        this.excludedPackages = ImmutableSet.copyOf(collected);
+    Filter(DocletEnvironment docletEnv) {
+        var packagesCollector = new PackagesCollector(internalAnnotation);
+
+        this.excludedPackages = packagesCollector.collect(docletEnv);
+        this.elementUtils = docletEnv.getElementUtils();
     }
 
     @Override
-    public boolean test(Element element) {
-        return internalAnnotation.test(element) || inExclusions(element);
+    public boolean test(Element el) {
+        return internalAnnotation.test(el) || inExclusions(el);
     }
 
     /**
-     * Tells if a package of the passed element is one of the {@link #excludedPackages},
+     * Tells if the package of the passed element is one of the {@link #excludedPackages},
      * or is a sub-package of one of them.
      */
-    private boolean inExclusions(Element element) {
-        String packageName = containingPackage(element).getQualifiedName()
-                                                       .toString();
-        for (PackageElement exclusion : excludedPackages) {
-            if (packageName.startsWith(exclusion.getQualifiedName()
-                                                .toString())) {
-                return true;
-            }
-        }
-        return false;
-    }
+    private boolean inExclusions(Element el) {
+        var enclosingPackage = elementUtils.getPackageOf(el);
 
-    private PackageElement containingPackage(Element el) {
-        Element p = el;
-
-        while (p.getKind() != ElementKind.PACKAGE) {
-            p = p.getEnclosingElement();
+        if (enclosingPackage == null) {
+            return false;
         }
 
-        return (PackageElement) p;
+        return excludedPackages.contains(enclosingPackage);
     }
 }
