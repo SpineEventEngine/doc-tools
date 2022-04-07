@@ -28,18 +28,17 @@ package io.spine.tools.javadoc.filter.doclet;
 
 import com.google.errorprone.annotations.Immutable;
 
+import javax.lang.model.AnnotatedConstruct;
 import javax.lang.model.element.AnnotationMirror;
-import javax.lang.model.element.Element;
-import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.QualifiedNameable;
 import java.lang.annotation.Annotation;
 import java.util.Collection;
 
 /**
- * Provides the methods to check if a program element has specified annotation.
+ * Provides the method to check if a program element has specified annotation.
  *
  * @param <C>
- *         the type of an annotation to check
+ *         the class of an annotation to be checked against
  */
 @Immutable
 final class AnnotationCheck<C extends Class<? extends Annotation>> {
@@ -50,12 +49,15 @@ final class AnnotationCheck<C extends Class<? extends Annotation>> {
         this.annotationClass = annotationClass;
     }
 
-    boolean test(Element doc) {
-        return isAnnotationPresent(doc.getAnnotationMirrors());
-    }
-
-    boolean test(PackageElement doc) {
-        return isAnnotationPresent(doc.getAnnotationMirrors());
+    /**
+     * Tests if the piece of code represented by the provided object is annotated with
+     * the {@link C annotation}.
+     *
+     * @return {@code true} if provided object is annotated with the annotation. Otherwise,
+     *         returns {@code false}.
+     */
+    boolean test(AnnotatedConstruct annotatedConstruct) {
+        return isAnnotationPresent(annotatedConstruct.getAnnotationMirrors());
     }
 
     private boolean isAnnotationPresent(Collection<? extends AnnotationMirror> annotations) {
@@ -63,12 +65,12 @@ final class AnnotationCheck<C extends Class<? extends Annotation>> {
                 .anyMatch(this::matchesName);
     }
 
-    private boolean matchesName(AnnotationMirror annotation) {
-        var annotationElement = (QualifiedNameable) annotation.getAnnotationType()
-                                                              .asElement();
-        return annotationElement.getQualifiedName()
-                                .toString()
-                                .equals(annotationClass.getName());
+    private boolean matchesName(AnnotationMirror annotationMirror) {
+        var annotation = (QualifiedNameable) annotationMirror.getAnnotationType()
+                                                             .asElement();
+        return annotation.getQualifiedName()
+                         .toString()
+                         .equals(annotationClass.getName());
     }
 }
 
