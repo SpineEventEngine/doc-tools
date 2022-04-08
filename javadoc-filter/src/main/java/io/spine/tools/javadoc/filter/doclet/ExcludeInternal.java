@@ -26,19 +26,13 @@
 
 package io.spine.tools.javadoc.filter.doclet;
 
-import com.sun.tools.javadoc.Main;
+import com.google.common.collect.ObjectArrays;
 import io.spine.annotation.Internal;
 import jdk.javadoc.doclet.DocletEnvironment;
 import jdk.javadoc.doclet.StandardDoclet;
-import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
-import javax.lang.model.element.Element;
-import java.lang.reflect.Array;
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Proxy;
-import java.util.ArrayList;
-import java.util.List;
+import javax.lang.model.SourceVersion;
+import java.util.spi.ToolProvider;
 
 /**
  * Extension of {@linkplain StandardDoclet} doclet, which excludes
@@ -66,12 +60,20 @@ import java.util.List;
  */
 @SuppressWarnings("ExtendsUtilityClass")
 public class ExcludeInternal extends StandardDoclet {
+    @Override
+    public String getName() {
+        return this.getClass()
+                   .getName();
+    }
 
-    private final Filter filter;
+    @Override
+    public boolean run(DocletEnvironment environment) {
+        return super.run(new FilteringDocletEnvironment(environment));
+    }
 
-    ExcludeInternal(Filter filter) {
-        super();
-        this.filter = filter;
+    @Override
+    public SourceVersion getSupportedSourceVersion() {
+        return SourceVersion.RELEASE_11;
     }
 
     /**
@@ -81,78 +83,15 @@ public class ExcludeInternal extends StandardDoclet {
      *         the command-line parameters
      */
     public static void main(String[] args) {
+        var javadoc = ToolProvider.findFirst("javadoc")
+                                  .orElseThrow();
+        var argsWithDoclet= setDoclet(args);
+        javadoc.run(System.out, System.err, argsWithDoclet);
+    }
+
+    private static String[] setDoclet(String[] args) {
         String name = ExcludeInternal.class.getName();
-        Main.execute(name, name, args);
-    }
-
-    /**
-     * The "start" method as required by Javadoc.
-     *
-     * @param root
-     *         the root of the documentation tree
-     * @return {@code true} if the doclet ran without encountering any errors,
-     *         {@code false} otherwise
-     */
-    @SuppressWarnings({"unused", "RedundantSuppression"}) // called by com.sun.tools.javadoc.Main
-    public static boolean start(DocletEnvironment root) {
-        Filter filter = new Filter(root);
-        ExcludeInternal doclet = new ExcludeInternal(filter);
-        DocletEnvironment rootDoc = (DocletEnvironment) doclet.process(root,
-                                                                       DocletEnvironment.class);
-        boolean result = new StandardDoclet().run(rootDoc);
-        return result;
-    }
-
-    /**
-     * Creates proxy of "com.sun..." interfaces and excludes
-     * {@linkplain Element}s using {@linkplain #filter}.
-     *
-     * @param returnValue
-     *         the value to process
-     * @param returnValueType
-     *         the expected type of value
-     * @return the processed value
-     */
-    @Nullable
-    Object process(@Nullable Object returnValue, Class<?> returnValueType) {
-        if (returnValue == null) {
-            return null;
-        }
-        boolean belongsToComSun =
-                returnValue.getClass()
-                           .getName()
-                           .startsWith("com.sun.");
-        if (belongsToComSun) {
-            return createProxy(returnValue);
-        } else if (returnValue instanceof Object[] && returnValueType.getComponentType() != null) {
-            return createArray((Object[]) returnValue, returnValueType);
-        } else {
-            return returnValue;
-        }
-    }
-
-    @NonNull
-    private Object[] createArray(Object[] returnValue, Class<?> returnValueType) {
-        Class<?> componentType = returnValueType.getComponentType();
-        Object[] array = returnValue;
-        List<Object> list = new ArrayList<>();
-        for (Object entry : array) {
-            if (!(entry instanceof Element
-                    && filter.test((Element) entry))) {
-                list.add(process(entry, componentType));
-            }
-        }
-        Object[] arr = list.toArray((Object[]) Array.newInstance(componentType, list.size()));
-        return arr;
-    }
-
-    @NonNull
-    private Object createProxy(@NonNull Object returnValue) {
-        Class<?> cls = returnValue.getClass();
-        InvocationHandler handler = new ExcludeHandler(this, returnValue);
-        Object proxy = Proxy.newProxyInstance(
-                cls.getClassLoader(), cls.getInterfaces(), handler
-        );
-        return proxy;
+        var doclet = String.format("-doclet %s", name);
+        return ObjectArrays.concat(doclet, args);
     }
 }
